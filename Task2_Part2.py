@@ -9,21 +9,54 @@ def generate_data(x1, x2, w, noice_var):
     return t
 
 # Returns <size>% of the data 
-def get_training_data(x1, x2, t, size):
-    num_x1 = int(len(x1)*size//2)
+def get_test_data(x1, x2, t, size):
+    num_x1 = int(len(x1)*size//2) # get outside index, exluding index
     num_x2 = int(len(x2)*size//2)
-    x1_train = np.concatenate((x1[:num_x1], x1[num_x1:]))
-    x2_train = np.concatenate((x2[:num_x2], x2[num_x2:]))
-    t_train_L = np.concatenate((t[:num_x2, :num_x1], t[num_x2:, :num_x1]))
-    t_train_R = np.concatenate((t[:num_x2, :num_x1], t[num_x2:, :num_x1])) # WRONG
-    t_train = np.concatenate((t_train_L, t_train_R), axis=1)
-    return x1_train, x2_train, t_train
+    x1_t = np.concatenate((x1[:num_x1], x1[-num_x1:]))
+    x2_t = np.concatenate((x2[:num_x2], x2[-num_x2:]))
+    t_t_T = np.concatenate((t[:num_x2, :num_x1], t[-num_x2:, :num_x1]))
+    t_t_B = np.concatenate((t[:num_x2, -num_x1:], t[-num_x2:, -num_x1:])) # ROW
+    t_t = np.concatenate((t_train_T, t_train_B), axis=1)
+    return x1_t, x2_t, t_t
+
+def get_training_data(x1, x2, t, size):
+    num_x1 = int(len(x2)*(1-size)//2) # get between index, includeing index
+    num_x2 = int(len(x2)*(1-size)//2)
+    x1_t = x1[num_x1 : -num_x1]
+    x2_t = x2[num_x2 : -num_x2]
+    t_t = t[num_x2:-num_x2, num_x1:-num_x1]
+    return x1_t, x2_t, t_t
+
+def get_biased_test_data(x1, x2, t, size):
+    num_x1 = int(len(x1)*size) # get outside index, exluding index
+    num_x2 = int(len(x2)*size)
+    x1_t = x1[-num_x1:]
+    x2_t = x2[-num_x2:]
+    t_t = t[-num_x1:, -num_x2:]
+    return x1_t, x2_t, t_t
+
+def get_biased_training_data(x1, x2, t, size):
+    num_x1 = int(len(x1)*size) # get outside index, exluding index
+    num_x2 = int(len(x2)*size)
+    x1_t = x1[:-num_x1]
+    x2_t = x2[:-num_x2]
+    t_t = t[:-num_x1, :-num_x2]
+    return x1_t, x2_t, t_t
 
 def main():
     x1 = np.linspace(-1.0, 1.0, n)
     x2 = np.linspace(-1.0, 1.0, n)
     w = np.array([0, 2.5, -0.5])
     t = generate_data(x1, x2, w, noice_var)
+    data = (x1,x2,t)
+
+    data_test = get_test_data(data[0],data[1],data[2], 0.7) # yields all |x1|, |x2| > 0.3
+    data_train = get_training_data(data[0],data[1],data[2], 0.7) 
+    data_test_biased = get_biased_test_data(data[0],data[1],data[2], 0.35) # yields all x1, x2 > 0.3
+    data_train_biased = get_biased_training_data(data[0],data[1],data[2], 0.35)
+
+    data_div1 = (data_test, data_train)
+    data_div2 = (data_test_biased, data_test_biased)
 
     
     
