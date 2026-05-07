@@ -5,7 +5,7 @@ from scipy.stats import multivariate_normal
 def generate_data(x1, x2, w, noice_var):
     X1, X2 = np.meshgrid(x1, x2)
     random_noice = np.random.normal(0, noice_var, size=(len(x2),len(x1)) )
-    t = np.ones((len(x2),len(x1)))*w[0] + X1*w[1] + X2*w[2] + random_noice    
+    t = np.ones((len(x2), len(x1)))*w[0] + (X1**2)*w[1] + (X2**3)*w[2] + random_noice    
     return x1, x2, t
 
 # Returns <size>% of the data 
@@ -67,6 +67,10 @@ def add_noice(mat, var):
     mat += random_noice
     return
 
+# x [2D vector] -> feature_vector []
+def feature_vector(x):
+    return np.vector([1, x[0]**2, x[1]**3])
+
 def main():
     # Generate data
     n=41; noice_var=0.3; x1 = np.linspace(-1.0, 1.0, n); x2 = np.linspace(-1.0, 1.0, n); w = np.array([0, 2.5, -0.5])
@@ -75,7 +79,8 @@ def main():
     datas = split_data(data, 0.7) # datas = (test, training)
     add_noice(data_div1[0][2], 0.5**2) # Add even more noice to testdata -- e ~ N(0, 0.25**2)
     
-  
+    # Preform most liklyhood
+
 
 main()
 
