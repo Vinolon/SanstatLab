@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal
+from itertools import product
 
 def generate_data(x1, x2, w, noice_var):
     X1, X2 = np.meshgrid(x1, x2)
@@ -49,15 +50,15 @@ def get_biased_training_data(data, size):
 
 # Splits the data into <test_size>% test data and the rest trainging data
 def split_data(data, test_size):
-    test_data = get_test_data(data, train_size)
-    train_data = get_training_data(data, 1-train_size)
+    test_data = get_test_data(data, test_size)
+    train_data = get_training_data(data, 1-test_size)
     return test_data, train_data
 
 # Splits the data into <test_size>% test data and the rest trainging data
 # Uses a biased splitting aproach
 def split_data_biased(data, test_size):
-    test_data = get_biased_test_data(data, train_size)
-    train_data = get_biased_training_data(data, 1-train_size)
+    test_data = get_biased_test_data(data, test_size)
+    train_data = get_biased_training_data(data, 1-test_size)
     return test_data, train_data
     
 # Adds noice ~ N(0, var) to a matrix mat
@@ -69,18 +70,42 @@ def add_noice(mat, var):
 
 # x [2D vector] -> feature_vector []
 def feature_vector(x):
-    return np.vector([1, x[0]**2, x[1]**3])
+    return np.array([1, x[0]**2, x[1]**3])
+
+# feature_vector [_ -> 1xD]
+# X [list of D-dim-vectors (x)]
+# Returns design matrix
+def design_matrix(feature_vector, X):
+    return np.array(list(map(feature_vector, X)))
+
+def get_w_liklyhood_method(alg_formated_data, feature_vector):
+    X, t = alg_formated_data
+    A = design_matrix(feature_vector, X)
+    w, residuals, rank, s = np.linalg.lstsq(A, t) # max liklyhood => least square method (when normal dist)
+    return w
+
+# Returns the data formatted as following
+# Input:    [[x1, y2], ..., [xn, ym]]   (list of input 2-length-vetors x)
+# Target:   [t11, ..., tnm]             (list of targets, each coresponding to the index of the input)
+def to_algebra_aproved_format(data):
+    x1, x2, t = data
+    x_reformated = np.array(product(x2, x1)) #NOT WORKING FIX
+    t_reformated = t.flatten()
+    return x_reformated, t_reformated
 
 def main():
     # Generate data
     n=41; noice_var=0.3; x1 = np.linspace(-1.0, 1.0, n); x2 = np.linspace(-1.0, 1.0, n); w = np.array([0, 2.5, -0.5])
+    n=11; noice_var=0; x1 = np.linspace(0.0, 10.0, n); x2 = np.linspace(0.0, 10.0, n); w = np.array([0, 2, -1])
     data = generate_data(x1, x2, w, noice_var) # data = (x1,x2,t)
     # Split data & adds extra noice
     datas = split_data(data, 0.7) # datas = (test, training)
-    add_noice(data_div1[0][2], 0.5**2) # Add even more noice to testdata -- e ~ N(0, 0.25**2)
+    add_noice(datas[0][2], 0.5**2) # Add even more noice to testdata -- e ~ N(0, 0.25**2)
     
     # Preform most liklyhood
-
+    train_data_alg_format = to_algebra_aproved_format(datas[1])
+    wML = get_w_liklyhood_method(train_data_alg_format, feature_vector)
+    print(wML)
 
 main()
 
