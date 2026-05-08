@@ -6,7 +6,12 @@ from itertools import product
 def generate_data(x1, x2, w, noice_var):
     X1, X2 = np.meshgrid(x1, x2)
     random_noice = np.random.normal(0, noice_var, size=(len(x2),len(x1)) )
-    t = np.ones((len(x2), len(x1)))*w[0] + (X1**2)*w[1] + (X2**3)*w[2] + random_noice    
+    t = (
+        np.ones((len(x2), len(x1)))*w[0] 
+        + (X1**2)*w[1] 
+        + (X2**3)*w[2] 
+        + random_noice    
+    )
     return x1, x2, t
 
 # Returns <size>% of the data 
@@ -89,14 +94,16 @@ def get_w_liklyhood_method(alg_formated_data, feature_vector):
 # Target:   [t11, ..., tnm]             (list of targets, each coresponding to the index of the input)
 def to_algebra_aproved_format(data):
     x1, x2, t = data
-    x_reformated = np.array(product(x2, x1)) #NOT WORKING FIX
+    X1, X2 = np.meshgrid(x1, x2)
+    X = np.dstack((X1, X2))
+    x_reformated = X.reshape((-1,2))  
     t_reformated = t.flatten()
     return x_reformated, t_reformated
 
 def main():
     # Generate data
     n=41; noice_var=0.3; x1 = np.linspace(-1.0, 1.0, n); x2 = np.linspace(-1.0, 1.0, n); w = np.array([0, 2.5, -0.5])
-    n=11; noice_var=0; x1 = np.linspace(0.0, 10.0, n); x2 = np.linspace(0.0, 10.0, n); w = np.array([0, 2, -1])
+    #n=11; noice_var=0; x1 = np.linspace(0.0, 10.0, n); x2 = np.linspace(0.0, 10.0, n); w = np.array([0, 2, -1]) # ETST VALUES
     data = generate_data(x1, x2, w, noice_var) # data = (x1,x2,t)
     # Split data & adds extra noice
     datas = split_data(data, 0.7) # datas = (test, training)
