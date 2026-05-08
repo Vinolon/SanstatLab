@@ -110,6 +110,10 @@ def predict_ts(alg_formated_X, w):
     t_pred = ones*w[0] + (X1**2)*w[1] + (X2**3)*w[2]
     return t_pred
 
+def predict_B(t_real, t_pred):
+    var_pred = np.mean((t_real-t_pred)**2)
+    return 1/var_pred
+
 def mean_squared_error(t_true, t_pred):
     return np.mean((t_true - t_pred) ** 2)
 
@@ -124,11 +128,13 @@ def main():
     add_noice(datas[0][2], 0.25**2) # Add even more noice to testdata -- e ~ N(0, 0.25**2)  ##TOLKNING AV INSTRUNKTIONERNA STEG 2- ÄR DETTA RÄTT????
     # Preform most liklyhood
     train_data_alg_format = to_algebra_aproved_format(datas[1])
-    wML = get_w_liklyhood_method(train_data_alg_format)
-    print(f"Predicted params w with Most-Liklyhood method:\n\t {wML}")
-    # Test ML with MSE
+    w_ML = get_w_liklyhood_method(train_data_alg_format)
+    print(f"Predicted params w with Most-Liklyhood method:\n\t {w_ML}")
     test_data_alg_format = to_algebra_aproved_format(datas[0])
-    t_prediction_ML = predict_ts(test_data_alg_format[0], wML)
+    t_prediction_ML = predict_ts(test_data_alg_format[0], w_ML)
+    B_ML = predict_B(train_data_alg_format[1], t_prediction_ML)
+    print(f"Predicted precition B with Most-Liklyhood method:\n\t {B_ML}")
+    # Test ML with MSE
     mse_ML = mean_squared_error(test_data_alg_format[1], t_prediction_ML)
     print(f"MSE of ML method:\n\t {mse_ML}")
 
