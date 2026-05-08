@@ -42,7 +42,7 @@ def get_biased_test_data(data, size):
     num_x2 = int(len(x2)*size)
     x1_t = x1[-num_x1:]
     x2_t = x2[-num_x2:]
-    t_t = t[-num_x1:, -num_x2:]
+    t_t = t[-num_x2:, -num_x1:]
     return x1_t, x2_t, t_t
 
 def get_biased_training_data(data, size):
@@ -51,7 +51,7 @@ def get_biased_training_data(data, size):
     num_x2 = int(len(x2)*size)
     x1_t = x1[:-num_x1]
     x2_t = x2[:-num_x2]
-    t_t = t[:-num_x1, :-num_x2]
+    t_t = t[:-num_x2, :-num_x1]
     return x1_t, x2_t, t_t
 
 # Splits the data into <test_size>% test data and the rest trainging data
@@ -110,7 +110,9 @@ def predict_ts(alg_formated_X, w):
     t_pred = ones*w[0] + (X1**2)*w[1] + (X2**3)*w[2]
     return t_pred
 
-def predict_B(t_real, t_pred):
+def predict_B(data, w):
+    X, t_real = data
+    t_pred = predict_ts(X, w)
     var_pred = np.mean((t_real-t_pred)**2)
     return 1/var_pred
 
@@ -130,11 +132,11 @@ def main():
     train_data_alg_format = to_algebra_aproved_format(datas[1])
     w_ML = get_w_liklyhood_method(train_data_alg_format)
     print(f"Predicted params w with Most-Liklyhood method:\n\t {w_ML}")
+    B_ML = predict_B(train_data_alg_format, w_ML)
+    print(f"Predicted precition B and variance V with Most-Liklyhood method:\n\t B:{B_ML}, V:{1/B_ML}")
+    # Test ML with MSE
     test_data_alg_format = to_algebra_aproved_format(datas[0])
     t_prediction_ML = predict_ts(test_data_alg_format[0], w_ML)
-    B_ML = predict_B(train_data_alg_format[1], t_prediction_ML)
-    print(f"Predicted precition B with Most-Liklyhood method:\n\t {B_ML}")
-    # Test ML with MSE
     mse_ML = mean_squared_error(test_data_alg_format[1], t_prediction_ML)
     print(f"MSE of ML method:\n\t {mse_ML}")
 

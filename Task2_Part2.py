@@ -65,8 +65,6 @@ def main():
     # Add even more noice to testdata -- e ~ N(0, 0.25**2)
     add_noice(data_div1[0][2], 0.5**2)
     add_noice(data_div2[0][2], 0.5**2)
-    
-    
 
 main()
 
