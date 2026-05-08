@@ -2,8 +2,9 @@
 # https://canvas.kth.se/courses/62696/pages/maskininlarningsdelen 
 
 import numpy as np
-import matplotlib . pyplot as plt
-from scipy . stats import multivariate_normal
+import matplotlib.pyplot as plt
+from scipy.stats import multivariate_normal
+from scipy.stats import norm
 
 w0list = np.linspace (-3.0, 1.0, 200)
 w1list = np.linspace (-2.0, 2.0, 200)
