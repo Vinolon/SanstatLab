@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal
 from scipy.stats import norm
 
+# Functions ########################################################
 
 def generate_data(x1, x2, w, noice_var):
     X1, X2 = np.meshgrid(x1, x2)
@@ -119,11 +120,54 @@ def predict_B(data, w):
 def mean_squared_error(t_true, t_pred):
     return np.mean((t_true - t_pred) ** 2)
 
-def main():
+# Sub Tasks ########################################################
+def task2_part1():
+    # - Generate data -
+    # Generate and plot data points using the model defined in Eq. 38 over the 2D domain of
+    # the input space where x = [x1, x2] subset of [−1, −0.95, . . . , 0.95, 1] x [−1, −0.95, . . . , 0.95, 1].
+    # Please use some fixed value of data noise σ, say, σ2 = 0.3 (try also σ2 subset of {0.6, 1.2})
+    
+    n=41; x1 = np.linspace(-1.0, 1.0, n); x2 = np.linspace(-1.0, 1.0, n); w = np.array([0, 2.5, -0.5])
+    
+    for i in range(4):
+        # Generate data
+        noice_var = [0.0,0.3,0.6,1.2][i]
+        data = generate_data(x1, x2, w, noice_var) # data = (x1,x2,t)
+
+        # Plots
+        plt.subplot(2, 2, i+1)
+        plt.contour(data[0], data[1], data[2]) 
+    plt.show()
+    return
+
+def task2_part2():
+    #Choose the samples for which |x1| > 0.3 or |x2| > 0.3 as your test data and keep the
+    #rest as your training subset (please consider also alternative scenarios where the training
+    #data are downsampled down to 5-10% of the original training dataset size and are biased,
+    #say, x1>0.3 and x2>0.3). Next, to simulate more reaalistic conditions about testing
+    #uncertainties, please add extra zero-mean noise to the test data (t SIextra; SIextra ' 0.25*SI).
+    n=41; noice_var=0.3; x1 = np.linspace(-1.0, 1.0, n); x2 = np.linspace(-1.0, 1.0, n); w = np.array([0, 2.5, -0.5])
+    print(f"Origional params w:\n\t {w}")
+    data = generate_data(x1, x2, w, noice_var) # data = (x1,x2,t)
+
+    # SPLITS DATA
+    # yields all |x1|, |x2| > 0.3
+    unbiased_split_data = split_data_biased(data, 0.7) # datas = (test, training)
+    # yields all x1, x2 > 0.3
+    biased_split_data = split_data_biased(data, 0.35) # datas = (test, training)
+
+    # ADDS EXTRA NOICE to test datasets
+    add_noice(unbiased_split_data[0][2], 0.25**2)
+    add_noice(biased_split_data[0][2], 0.25**2)
+    
+    return
+
+
+def task2_part3():
     # Generate data
     n=41; noice_var=0.3; x1 = np.linspace(-1.0, 1.0, n); x2 = np.linspace(-1.0, 1.0, n); w = np.array([0, 2.5, -0.5])
     print(f"Origional params w:\n\t {w}")
-    #n=11; noice_var=0; x1 = np.linspace(0.0, 10.0, n); x2 = np.linspace(0.0, 10.0, n); w = np.array([0, 2, -1]) # ETST VALUES
+    #n=11; noice_var=0; x1 = np.linspace(0.0, 10.0, n); x2 = np.linspace(0.0, 10.0, n); w = np.array([0, 2, -1]) # TEST VALUES
     data = generate_data(x1, x2, w, noice_var) # data = (x1,x2,t)
     # Split data & adds extra noice
     datas = split_data(data, 0.7) # datas = (test, training)
@@ -140,6 +184,11 @@ def main():
     mse_ML = mean_squared_error(test_data_alg_format[1], t_prediction_ML)
     print(f"MSE of ML method:\n\t {mse_ML}")
 
+def main():
+    task2_part1()
+    task2_part3()
+    return
+
 
 main()
-
+    
