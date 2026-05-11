@@ -54,7 +54,7 @@ def compute_likelihood(num_samples):
 
     # Get data subset for the random index
     x_subset = x_training[indices]
-    t_subset = x_training[indices]
+    t_subset = t_training[indices]
 
     total_likelihood = np.ones(w0arr.shape)
     for xi, ti in zip(x_subset, t_subset):
@@ -96,21 +96,21 @@ def compute_posterior(num_samples):
     x_subset = x_training[indices]
     t_subset = t_training[indices]
 
-    # Gets X_ext (phi) which becomes a (len(x_subset), 2) shaped array
-    X_ext = np.column_stack((np.ones(len(x_subset)), x_subset))
+    # Gets x_ext (phi) which becomes a (len(x_subset), 2) shaped array
+    x_ext = np.column_stack((np.ones(len(x_subset)), x_subset))
     # SN^(-1) (Equation 28)
-    SN_inv = alpha * np.identity(2) + beta * X_ext.T @ X_ext
+    SN_inv = alpha * np.identity(2) + beta * x_ext.T @ x_ext
     # Takes inverse of SN^(-1) to get SN which is the posterior covariance
     SN = np.linalg.inv(SN_inv)
     # Gets the posterior mean (Equation 27)
-    mN = beta * SN @ X_ext.T @ t_subset
+    mN = beta * SN @ x_ext.T @ t_subset
     # Creates multivariate normal distribution for the posterior (Equation 24)
     posterior_dist = multivariate_normal(mN, SN)
-    return posterior_dist, x_subset, t_subset
+    return posterior_dist, x_subset, t_subset, SN, mN
 
 # Function for plotting the posterior in a subplot at the desired plot index plot_idx
 def plot_posterior(num_samples, plot_idx):
-    posterior_dist, _, _ = compute_posterior(num_samples)
+    posterior_dist, _, _, _, _ = compute_posterior(num_samples)
     # Gets probability density value for every position in pos
     posterior_pdf = posterior_dist.pdf(pos)
 
@@ -150,7 +150,7 @@ t_test = -1.2 + 0.9 * x_test + noise_test
 # Also plots all training and testing data, with 'x'-markers for which were used in training
 def plot_model_samples(num_samples, plot_idx):
     # Gets posterior distribution, x and t subset from compute_posterior() with num_samples
-    posterior_dist, x_subset, t_subset = compute_posterior(num_samples)
+    posterior_dist, x_subset, t_subset, _, _ = compute_posterior(num_samples)
     
     # Gets a random value sample of 5 values from the posterior distribution
     # Something with 50% probability in the distribution will be sampled 50% of the time
@@ -179,4 +179,49 @@ plot_model_samples(3,1)
 plot_model_samples(10,2)
 plot_model_samples(20,3)
 plot_model_samples(100,4)
+plt.show()
+
+
+# Part 5
+
+# Plot predictions (mean and standard deviation) for each test point (in x_test)
+def plot_predictions(num_samples, plot_idx):
+    # Get posterior distribution and its parameters mN and SN
+    # also get which training points were used in the run
+    _, x_subset, t_subset, SN, mN = compute_posterior(num_samples)
+    # Will store one predicted mean per test point
+    means = []
+    # Will store one predicted standard deviation per test point
+    std_dev = []
+    for x in x_test:
+        # Build x_ext = [1,x] for the current test point
+        x_ext = np.array([1,x])
+        # Compute predictive mean (Equation 33)
+        # This is the model's best guess for t at this x
+        mean_pred = mN.T @ x_ext
+        # Compute predictive variance (Equation 34)
+        # 1/beta is the irreducible data noise, while (x_ext.T @ SN @ x_ext) shrinks with more data
+        variance_pred = 1/beta + x_ext.T @ SN @ x_ext
+        # Append predictive mean for this test point
+        means.append(mean_pred)
+        # Convert predictive variance to standard deviation and append
+        std_dev.append(np.sqrt(variance_pred))
+
+    # Plot in one 2x2 figure, where the subplot is decided by plot_idx
+    plt.subplot(2, 2, plot_idx)
+    plt.errorbar(x_test, means, std_dev, label="Predictive mean +- standard deviation")
+    plt.scatter(x_training, t_training, label="Training data")
+    # Mark data used in model training with 'x'
+    plt.scatter(x_subset, t_subset, marker='x', label="Training subset")
+    plt.title(f"Predictive distribution ({num_samples} samples)")
+    plt.xlabel("x")
+    plt.ylabel("t")
+    plt.legend()
+
+# Plot 4 different predictions with varying num_samples in different subplots of the same figure
+plt.figure()
+plot_predictions(3,1)
+plot_predictions(10,2)
+plot_predictions(20,3)
+plot_predictions(100,4)
 plt.show()
