@@ -186,13 +186,17 @@ def task2_part2():
 
 def task2_part3():
     # Generate data
-    n=41; noice_var=0.3; x1 = np.linspace(-1.0, 1.0, n); x2 = np.linspace(-1.0, 1.0, n); w = np.array([0, 2.5, -0.5])
+    n=41; noice_var=0.3; x1 = np.linspace(-1.0, 1.0, n); x2 = np.linspace(-1.0, 1.0, n); w = np.array([0, 2.5, -0.5]); is_biased=False; split_cutof=0.3
+
     print(f"Origional params w:\n\t {w}")
     #n=11; noice_var=0; x1 = np.linspace(0.0, 10.0, n); x2 = np.linspace(0.0, 10.0, n); w = np.array([0, 2, -1]) # TEST VALUES
     data = generate_data(x1, x2, w, noice_var) # data = (x1,x2,t)
     # Split data & adds extra noice
-    datas = split(data, 0.3) # datas = (test, training)
-    add_noice(datas[0][1], noice_var, 0.3) # Add even more noice to testdata --  ##TOLKNING AV INSTRUNKTIONERNA STEG 2- ÄR DETTA RÄTT????
+    if not is_biased:
+        datas = split(data, split_cutof) # datas = (test, training)
+    else:
+        datas = split_biased(data, split_cutof) # datas = (test, training)
+    add_noice(datas[0][1], noice_var, 0.25) # Add even more noice to testdata --  ##TOLKNING AV INSTRUNKTIONERNA STEG 2- ÄR DETTA RÄTT????
     # Preform most liklyhood
     w_ML = get_w_liklyhood_method(datas[1])
     print(f"Predicted params w with Most-Liklyhood method:\n\t {w_ML}")
@@ -217,7 +221,12 @@ def task2_part3():
     ax.scatter(X_train[:, 0], X_train[:, 1], t_train)
     ax.scatter(X_test[:, 0], X_test[:, 1], t_prediction_ML)
 
-    ax.set_title("Bla bla bla")
+    if not is_biased:
+        propotion_tain = ((split_cutof*2)**2)/4
+    else:
+        propotion_tain = ((1+split_cutof)**2)/4
+
+    ax.set_title(f"Liklyhood method\nNoiceVar: {noice_var}\nBiased split: {is_biased}\nTrain data: {propotion_tain*100}%\nMSE: {mse_ML}")
     ax.set_xlabel("x1")
     ax.set_ylabel("x2")
     ax.set_zlabel("t")
@@ -230,9 +239,10 @@ def plotML():
     return
 
 def main():
-    task2_part1()
-    task2_part2()
-    task2_part3()
+    #task2_part1()
+    #task2_part2()
+    for i in range(5):
+        task2_part3()
     return
 
 
