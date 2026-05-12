@@ -24,7 +24,7 @@ pos = np.dstack((w0arr, w1arr))
 prior_pdf = prior_dist.pdf(pos)
 
 # Contour plot the prior
-plt.contour(w0arr, w1arr, prior_pdf)
+plt.contourf(w0arr, w1arr, prior_pdf)
 plt.xlabel("w0")
 plt.ylabel("w1")
 plt.title(f"Prior")
@@ -80,7 +80,7 @@ def compute_likelihood(x_subset, t_subset):
 def plot_likelihood(x_subset, t_subset, plt_idx):
     plt.subplot(2,2,plt_idx)
     # compute_likelihood() gives total likelihood with num_samples number of samples
-    plt.contour(w0arr, w1arr, compute_likelihood(x_subset, t_subset))
+    plt.contourf(w0arr, w1arr, compute_likelihood(x_subset, t_subset))
     plt.xlabel("w0")
     plt.ylabel("w1")
     plt.title(f"Likelihood with {len(x_subset)} samples")
@@ -119,7 +119,7 @@ def plot_posterior(x_subset, t_subset, plot_idx):
 
     # Contour plot the posterior
     plt.subplot(2, 2, plot_idx)
-    plt.contour(w0arr, w1arr, posterior_pdf)
+    plt.contourf(w0arr, w1arr, posterior_pdf)
     plt.xlabel("w0")
     plt.ylabel("w1")
     plt.title(f"Posterior with {len(x_subset)} samples")
