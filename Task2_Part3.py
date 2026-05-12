@@ -14,64 +14,52 @@ def generate_data(x1, x2, w, noice_var):
         + (X2**3)*w[2] 
         + random_noice    
     )
-    return x1, x2, t
+    
+    return to_algebra_aproved_format((x1, x2, t))
 
-# Returns <size>% of the data 
-def get_test_data(data, size):
-    x1, x2, t = data
-    num_x1 = int(len(x1)*size//2) # get outside index, exluding index
-    num_x2 = int(len(x2)*size//2)
-    x1_t = np.concatenate((x1[:num_x1], x1[-num_x1:]))
-    x2_t = np.concatenate((x2[:num_x2], x2[-num_x2:]))
-    t_t_T = np.concatenate((t[:num_x2, :num_x1], t[-num_x2:, :num_x1]))
-    t_t_B = np.concatenate((t[:num_x2, -num_x1:], t[-num_x2:, -num_x1:])) # ROW
-    t_t = np.concatenate((t_t_T, t_t_B), axis=1)
-    return x1_t, x2_t, t_t
+# Splits into test and train data
+def split(data, cutof):
+    x, t = data
+    x_test = []
+    t_test = []
+    x_train = []
+    t_train = []
+    for i in range(len(x)):
+        if abs(x[i,0]) >= cutof or abs(x[i,1]) >= cutof:
+            x_test.append(x[i])
+            t_test.append(t[i])
+        else:
+            x_train.append(x[i])
+            t_train.append(t[i])
+    x_test = np.array(x_test)
+    t_test = np.array(t_test)
+    x_train = np.array(x_train)
+    t_train = np.array(t_train)
+    return ((x_test, t_test), (x_train, t_train))
 
-def get_training_data(data, size):
-    x1, x2, t = data
-    num_x1 = int(len(x2)*(1-size)//2) # get between index, includeing index
-    num_x2 = int(len(x2)*(1-size)//2)
-    x1_t = x1[num_x1 : -num_x1]
-    x2_t = x2[num_x2 : -num_x2]
-    t_t = t[num_x2:-num_x2, num_x1:-num_x1]
-    return x1_t, x2_t, t_t
-
-def get_biased_test_data(data, size):
-    x1, x2, t = data
-    num_x1 = int(len(x1)*size) # get outside index, exluding index
-    num_x2 = int(len(x2)*size)
-    x1_t = x1[-num_x1:]
-    x2_t = x2[-num_x2:]
-    t_t = t[-num_x2:, -num_x1:]
-    return x1_t, x2_t, t_t
-
-def get_biased_training_data(data, size):
-    x1, x2, t = data
-    num_x1 = int(len(x1)*size) # get outside index, exluding index
-    num_x2 = int(len(x2)*size)
-    x1_t = x1[:-num_x1]
-    x2_t = x2[:-num_x2]
-    t_t = t[:-num_x2, :-num_x1]
-    return x1_t, x2_t, t_t
-
-# Splits the data into <test_size>% test data and the rest trainging data
-def split_data(data, test_size):
-    test_data = get_test_data(data, test_size)
-    train_data = get_training_data(data, 1-test_size)
-    return test_data, train_data
-
-# Splits the data into <test_size>% test data and the rest trainging data
-# Uses a biased splitting aproach
-def split_data_biased(data, test_size):
-    test_data = get_biased_test_data(data, test_size)
-    train_data = get_biased_training_data(data, 1-test_size)
-    return test_data, train_data
+def split_biased(data, cutof):
+    x, t = data
+    x_test = []
+    t_test = []
+    x_train = []
+    t_train = []
+    for i in range(len(x)):
+        if x[i,0]>=cutof or x[i,1]>=cutof:
+            x_test.append(x[i])
+            t_test.append(t[i])
+        else:
+            x_train.append(x[i])
+            t_train.append(t[i])
+    x_test = np.array(x_test)
+    t_test = np.array(t_test)
+    x_train = np.array(x_train)
+    t_train = np.array(t_train)
+    return ((x_test, t_test), (x_train, t_train))
     
 # Adds noice ~ N(0, var) to a matrix mat
 # Mutates mat, Returns nothing
-def add_noice(mat, var):
-    random_noice = np.random.normal(0, np.sqrt(var), size=(mat.shape))
+def add_noice(mat, var, magnitute):
+    random_noice = magnitute*np.random.normal(0, np.sqrt(var), size=(mat.shape))
     mat += random_noice
     return
 
@@ -128,16 +116,27 @@ def task2_part1():
     # Please use some fixed value of data noise σ, say, σ2 = 0.3 (try also σ2 subset of {0.6, 1.2})
     
     n=41; x1 = np.linspace(-1.0, 1.0, n); x2 = np.linspace(-1.0, 1.0, n); w = np.array([0, 2.5, -0.5])
-    
+
+    fig = plt.figure()
     for i in range(4):
         # Generate data
         noice_var = [0.0,0.3,0.6,1.2][i]
         data = generate_data(x1, x2, w, noice_var) # data = (x1,x2,t)
 
         # Plots
-        plt.subplot(2, 2, i+1)
-        plt.contour(data[0], data[1], data[2]) 
+        X = data[0]
+        t = data[1]
+
+        ax = fig.add_subplot(2, 2, i + 1, projection='3d')
+        ax.scatter(X[:, 0], X[:, 1], t, c=t)
+
+        ax.set_title(f"noise = {noice_var}")
+        ax.set_xlabel("x1")
+        ax.set_ylabel("x2")
+        ax.set_zlabel("t")
+    plt.tight_layout()
     plt.show()
+    
     return
 
 def task2_part2():
@@ -152,13 +151,35 @@ def task2_part2():
 
     # SPLITS DATA
     # yields all |x1|, |x2| > 0.3
-    unbiased_split_data = split_data_biased(data, 0.7) # datas = (test, training)
+    unbiased_split_data = split(data, 0.3) # datas = (test, training)
     # yields all x1, x2 > 0.3
-    biased_split_data = split_data_biased(data, 0.35) # datas = (test, training)
+    biased_split_data = split_biased(data, 0.3) # datas = (test, training)
 
     # ADDS EXTRA NOICE to test datasets
-    add_noice(unbiased_split_data[0][2], 0.25**2)
-    add_noice(biased_split_data[0][2], 0.25**2)
+    add_noice(unbiased_split_data[0][1], 0.3, 0.25)
+    add_noice(biased_split_data[0][1], 0.3, 0.25)
+
+    fig = plt.figure()
+    for i in range(2):
+        # Plots
+        header = ["Unbiased choice of Training & Testing data", "Biased choice of Training & Testing data"][i]
+        datas = [unbiased_split_data, biased_split_data][i]
+
+        X_test = datas[0][0]
+        t_test = datas[0][1]
+        X_train = datas[1][0]
+        t_train = datas[1][1]
+
+        ax = fig.add_subplot(1, 2, i + 1, projection='3d')
+        ax.scatter(X_test[:, 0], X_test[:, 1], t_test)
+        ax.scatter(X_train[:, 0], X_train[:, 1], t_train)
+
+        ax.set_title(header)
+        ax.set_xlabel("x1")
+        ax.set_ylabel("x2")
+        ax.set_zlabel("t")
+    plt.tight_layout()
+    plt.show()
     
     return
 
@@ -170,22 +191,47 @@ def task2_part3():
     #n=11; noice_var=0; x1 = np.linspace(0.0, 10.0, n); x2 = np.linspace(0.0, 10.0, n); w = np.array([0, 2, -1]) # TEST VALUES
     data = generate_data(x1, x2, w, noice_var) # data = (x1,x2,t)
     # Split data & adds extra noice
-    datas = split_data(data, 0.7) # datas = (test, training)
-    add_noice(datas[0][2], 0.25**2) # Add even more noice to testdata -- e ~ N(0, 0.25**2)  ##TOLKNING AV INSTRUNKTIONERNA STEG 2- ÄR DETTA RÄTT????
+    datas = split(data, 0.3) # datas = (test, training)
+    add_noice(datas[0][1], noice_var, 0.3) # Add even more noice to testdata --  ##TOLKNING AV INSTRUNKTIONERNA STEG 2- ÄR DETTA RÄTT????
     # Preform most liklyhood
-    train_data_alg_format = to_algebra_aproved_format(datas[1])
-    w_ML = get_w_liklyhood_method(train_data_alg_format)
+    w_ML = get_w_liklyhood_method(datas[1])
     print(f"Predicted params w with Most-Liklyhood method:\n\t {w_ML}")
-    B_ML = predict_B(train_data_alg_format, w_ML)
+    B_ML = predict_B(datas[1], w_ML)
     print(f"Predicted precition B and variance V with Most-Liklyhood method:\n\t B:{B_ML}, V:{1/B_ML}")
     # Test ML with MSE
-    test_data_alg_format = to_algebra_aproved_format(datas[0])
-    t_prediction_ML = predict_ts(test_data_alg_format[0], w_ML)
-    mse_ML = mean_squared_error(test_data_alg_format[1], t_prediction_ML)
+    t_prediction_ML = predict_ts(datas[0][0], w_ML)
+    mse_ML = mean_squared_error(datas[0][1], t_prediction_ML)
     print(f"MSE of ML method:\n\t {mse_ML}")
+
+    #PLOTS
+    fig = plt.figure()
+
+    X_test = datas[0][0]
+    t_test = datas[0][1]
+    X_train = datas[1][0]
+    t_train = datas[1][1]
+    X = data[0]
+
+    ax = fig.add_subplot(1, 1, 1, projection='3d')
+    ax.scatter(X_test[:, 0], X_test[:, 1], t_test)
+    ax.scatter(X_train[:, 0], X_train[:, 1], t_train)
+    ax.scatter(X_test[:, 0], X_test[:, 1], t_prediction_ML)
+
+    ax.set_title("Bla bla bla")
+    ax.set_xlabel("x1")
+    ax.set_ylabel("x2")
+    ax.set_zlabel("t")
+    plt.tight_layout()
+    plt.show()
+
+
+def plotML():
+
+    return
 
 def main():
     task2_part1()
+    task2_part2()
     task2_part3()
     return
 
