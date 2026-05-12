@@ -139,7 +139,7 @@ x_test_right = np.arange(1.1, 1.6, 0.1)
 # Combine negative and positive x-values to get full x = [-1.5, -1.4,..., -1.1, 1.1,...,1.5] (36)
 x_test = np.concatenate((x_test_left, x_test_right))
 # Get x-values for interval [-1.5,1.5] so that we can plot the lines for the entire interval
-x_full = np.concatenate((x_test_left, x_training, x_test_right))
+x_full = np.linspace(-1.5, 1.5, 300)
 # Noise follows gaussian distribution with mu=0, sigma=sqrt(0.2).
 # Get len(x_test) random noise-values
 noise_test = np.random.normal(0, sigma, len(x_test))
@@ -156,10 +156,10 @@ def plot_model_samples(num_samples, plot_idx):
     # Something with 50% probability in the distribution will be sampled 50% of the time
     samples = posterior_dist.rvs(5)
 
+    plt.subplot(2, 2, plot_idx)
     # Plots the linear functions y = w0 + w1 * x for each weight sample in the same subplot
     for w0, w1 in samples:
         y = w0 + w1 * x_full
-        plt.subplot(2, 2, plot_idx)
         plt.plot(x_full, y)
 
     # Plots all training data points
@@ -193,9 +193,20 @@ def plot_predictions(num_samples, plot_idx):
     means = []
     # Will store one predicted standard deviation per test point
     std_dev = []
+    # Will store one predicted t value using maximum likelihood per test point
+    ml_preds = []
+    # Create x_ext which will be a (len(x_subset), 2) sized array
+    x_ext_training = np.column_stack((np.ones(len(x_subset)), x_subset))
+    # Calculate optimal weights (w_ml) using maximum likelihood (Equation 21)
+    wML = np.linalg.inv(x_ext_training.T @ x_ext_training) @ x_ext_training.T @ t_subset
     for x in x_test:
         # Build x_ext = [1,x] for the current test point
         x_ext = np.array([1,x])
+        # Calculate the prediction for t at the current x 
+        # using the maximum likelihood method (Underneath equation 21)
+        t_ml_pred = wML @ np.array([1, x])
+        # Append prediction of t using ML to ml_preds
+        ml_preds.append(t_ml_pred)
         # Compute predictive mean (Equation 33)
         # This is the model's best guess for t at this x
         mean_pred = mN.T @ x_ext
@@ -209,7 +220,8 @@ def plot_predictions(num_samples, plot_idx):
 
     # Plot in one 2x2 figure, where the subplot is decided by plot_idx
     plt.subplot(2, 2, plot_idx)
-    plt.errorbar(x_test, means, std_dev, label="Predictive mean +- standard deviation")
+    plt.errorbar(x_test, means, yerr=std_dev, label="Predictive mean +- standard deviation")
+    plt.plot(x_test, ml_preds, label="Predictions for t using maximum likelihood", linestyle='--')
     plt.scatter(x_training, t_training, label="Training data")
     # Mark data used in model training with 'x'
     plt.scatter(x_subset, t_subset, marker='x', label="Training subset")
@@ -225,3 +237,48 @@ plot_predictions(10,2)
 plot_predictions(20,3)
 plot_predictions(100,4)
 plt.show()
+
+
+# Part 6
+# See wML t_ml_preds and ml_preds which were added to plot_predictions()
+
+
+# Part 7
+# Just change alpha and variance variables at the top to try different values
+
+# Effect of noise: Higher variance means the data is noisier. 
+# This increases 1/beta which makes error bars wider.
+# It also means that more samples are needed to get a confident estimate. 
+
+# Effect of alpha: Alpha is the precision of the prior, and controls how strongly 
+# the prior pulls the weights toward the mean (zero). A high alpha value means that the 
+# model is very confident weights are near zero before seeing any data, so it takes 
+# more data to move the posterior away.
+
+# Effect of number of training samples: More samples tighten the posterior as 
+# SN gets smaller, which reduces the x_ext.T @ SN @ x_ext term in the predictive variance. 
+# Importantly, no matter how many samples you add, the error bars never go below the 1/beta floor
+
+# How they interact: High noise needs more samples to compensate and a strong prior (high alpha) 
+# also needs more samples to overcome. 
+
+
+# Part 8
+# Difference between ML and Bayesian: 
+# ML gives a single number per prediction while Bayesian gives a full distribution. 
+
+# ML: 
+# Gives one fixed set of weights w_ML that best explains the training data
+# Predicts t = w_ML^T * x 
+# Has no way to tell certainty
+# As a consequence it can be confidently wrong, for example with few samples it can give 
+# a poor model with no way of telling that it is uncertain. 
+
+# Bayesian: 
+# Gives a full distribution over the weights (Posterior)
+# Each prediction is a Gaussian with a mean and variance
+# The variance shows uncertainty, which is larger with less data or when predicting far 
+# from the training data. 
+
+# With enough data both approaches converge to around the true weights (see plot_predictions(100,_))
+# The difference with the Bayesian showing the uncertainty remains however.
