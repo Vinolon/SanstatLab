@@ -151,7 +151,7 @@ t_test = -1.2 + 0.9 * x_test + noise_test
 
 # Draws 5 model samples for weight parameters from the posterior and plots corresponding lines.
 # Also plots all training and testing data, with 'x'-markers for which were used in training
-def plot_model_samples(x_subset, t_subset, plot_idx):
+def plot_sampled_regression_line(x_subset, t_subset, plot_idx):
     # Gets posterior distribution from compute_posterior() with number of samples depending on x and t_subset
     posterior_dist, _, _ = compute_posterior(x_subset, t_subset)
     
@@ -171,17 +171,17 @@ def plot_model_samples(x_subset, t_subset, plot_idx):
     plt.scatter(x_test, t_test, label="Test data")
     # Plots the data points that were used in the training of the model and mark them with 'x'
     plt.scatter(x_subset, t_subset, color="orange", marker='x', label="Training subset")
-    plt.title(f"Posterior Samples ({len(x_subset)} samples)")
+    plt.title(f"Regression lines from {5} posterior weight samples (trained on {len(x_subset)} points)")
     plt.xlabel("x")
     plt.ylabel("t")
     plt.legend()
 
 # Plot 4 different model samples with varying number of samples in different subplots of the same figure
 plt.figure()
-plot_model_samples(*subset3,1)
-plot_model_samples(*subset10,2)
-plot_model_samples(*subset20,3)
-plot_model_samples(*subset100,4)
+plot_sampled_regression_line(*subset3,1)
+plot_sampled_regression_line(*subset10,2)
+plot_sampled_regression_line(*subset20,3)
+plot_sampled_regression_line(*subset100,4)
 plt.show()
 
 
