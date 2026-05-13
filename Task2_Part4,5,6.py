@@ -1,8 +1,8 @@
 from matplotlib.pylab import inv
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.stats import multivariate_normal
-from scipy.stats import norm
+#from scipy.stats import multivariate_normal
+#from scipy.stats import norm
 
 def generate_data(x1, x2, w, noice_var):
     X1, X2 = np.meshgrid(x1, x2)
@@ -142,21 +142,39 @@ def Bayesian_pred(sN, mN, test_data, b):
 
 def main():
     # Generate data
-    n=41; sigma2=0.3; 
+    n=41; normvar = 0.3; normsize= 0.5
+
     x1 = np.linspace(-1.0, 1.0, n); x2 = np.linspace(-1.0, 1.0, n); 
-    w = np.array([0, 2.5, -0.5]); b = 1/sigma2
-    data = generate_data(x1, x2, w, sigma2)
-    datas = split(data, 0.3) # datas = (test, training)
-    add_noice(datas[0][1], sigma2, 0.25) # Add even more noise to testdata -- 
-    train = datas[1]
-    test = datas[0]
-    
-    w_ML = get_w_likelihood_method(train)
-    t_prediction_ML = predict_ts(test[0], w_ML)
-    mse_ML = mean_squared_error(test[1], t_prediction_ML)
+    w = np.array([0, 2.5, -0.5]); 
+    data = generate_data(x1, x2, w, normvar)
+    datas = split_biased(data, normsize) # datas = (test, training)
+    add_noice(datas[0][1], normvar, 0.25) # Add even more noise to testdata -- 
+    b = 1/normvar
+    normproportion_train_biased = ((1+normsize)**2)/4
+
+
+    #alpha = 0.8
+    mse_ML_arr = []
+    mse_Bay_arr = []
+    mse_Bay_train_arr = []
+    variance = [0.1,0.2,0.3]
+    train_size = [0.3, 0.4, 0.5, 0.6]
+    proportion_arr = []
+    normalpha = [0.2, 0.8, 2.0]
     
     for alpha in [0.2, 0.8, 2.0]:
-        
+        #data = generate_data(x1, x2, w, normvar)
+        #datas = split_biased(data, size) # datas = (test, training)
+        #add_noice(datas[0][1], normvar, 0.25) # Add even more noise to testdata -- 
+        train = datas[1]
+        test = datas[0]
+        #b = 1/var
+        #proportion_train = ((1+0.3)**2)/4
+
+        w_ML = get_w_likelihood_method(train)
+        t_prediction_ML = predict_ts(test[0], w_ML)
+        mse_ML = mean_squared_error(test[1], t_prediction_ML)
+
         sN, mN = Bayesian_variance(alpha, b, train)
         pred_variance_test, pred_mean_test = Bayesian_pred(sN, mN, test, b)
         t_pred_test = pred_mean_test
@@ -167,6 +185,11 @@ def main():
         t_pred_train = pred_mean_train
         mean_variance_train = np.mean(pred_variance_train)
         mse_Bay_train = mean_squared_error(train[1], t_pred_train)
+
+        mse_Bay_arr.append(mse_Bay)
+        mse_Bay_train_arr.append(mse_Bay_train)
+        mse_ML_arr.append(mse_ML)
+        #proportion_arr.append(proportion_train)
     
         print(f"Mean of test variance for alpha {alpha}: {mean_variance_test}")
         print(f"MSE of Bayesian approach for test data: \n\t {mse_Bay}")
@@ -174,6 +197,49 @@ def main():
         
         print(f"Mean of train variance for alpha {alpha}: {mean_variance_train}")
         print(f"MSE of Bayesian approach for train data: \n\t {mse_Bay_train}")
+
+        X_test = datas[0][0]
+        t_test = datas[0][1]
+        X_train = datas[1][0]
+        t_train = datas[1][1]
+        X = data[0]
+        """
+        fig1 = plt.figure()
+        ax = fig1.add_subplot(111, projection='3d')
+        ax.set_title(f"Mean of test data variance: {round(mean_variance_test, 4)}\n \n alpha: {alpha}")
+
+        ax.scatter(X_test[:, 0], X_test[:, 1], t_test, color = "blue")
+        ax.scatter(X_test[:, 0], X_test[:, 1], t_pred_test, color = "red")
+        ax.set_xlabel("x1")
+        ax.set_ylabel("x2")
+        ax.set_zlabel("t")
+        plt.legend()
+        plt.tight_layout()
+        plt.show()
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.set_title(f"Mean of training data variance: {round(mean_variance_train, 4)}\n alpha: {alpha}")
+
+        ax.scatter(X_train[:, 0], X_train[:, 1], t_train, color = "blue")
+        ax.scatter(X_train[:, 0], X_train[:, 1], t_pred_train, color = "red")
+        ax.set_xlabel("x1")
+        ax.set_ylabel("x2")
+        ax.set_zlabel("t")
+        plt.legend()
+        plt.tight_layout()
+        plt.show()"""
+
+    #plt.title(f"{round(normproportion_train_biased, 4)}% amount of biased training data")
+    plt.title(f"Test data mean variance vs training data mean variance, \n {round(normproportion_train_biased, 4)}% amount of biased training data")
+
+    plt.plot(normalpha, mse_Bay_train_arr, color = "red", label = "Training data mean variance")
+    plt.plot(normalpha, mse_Bay_arr, color = "blue", label = "Testing data mean variance")
+    plt.xlabel("alpha")
+    plt.ylabel("mean")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
 
 main()
