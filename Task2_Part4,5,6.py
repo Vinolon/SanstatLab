@@ -4,74 +4,61 @@ import matplotlib.pyplot as plt
 from scipy.stats import multivariate_normal
 from scipy.stats import norm
 
-
 def generate_data(x1, x2, w, noice_var):
     X1, X2 = np.meshgrid(x1, x2)
-    random_noise = np.random.normal(0, np.sqrt(noice_var), size=(len(x2),len(x1)) )
+    random_noice = np.random.normal(0, np.sqrt(noice_var), size=(len(x2),len(x1)) )
     t = (
         np.ones((len(x2), len(x1)))*w[0] 
         + (X1**2)*w[1] 
         + (X2**3)*w[2] 
-        + random_noise    
+        + random_noice    
     )
-    return x1, x2, t
+    
+    return to_algebra_aproved_format((x1, x2, t))
 
-# Returns <size>% of the data 
-def get_test_data(data, size):
-    x1, x2, t = data
-    num_x1 = int(len(x1)*size//2) # get outside index, exluding index
-    num_x2 = int(len(x2)*size//2)
-    x1_t = np.concatenate((x1[:num_x1], x1[-num_x1:]))
-    x2_t = np.concatenate((x2[:num_x2], x2[-num_x2:]))
-    t_t_T = np.concatenate((t[:num_x2, :num_x1], t[-num_x2:, :num_x1]))
-    t_t_B = np.concatenate((t[:num_x2, -num_x1:], t[-num_x2:, -num_x1:])) # ROW
-    t_t = np.concatenate((t_t_T, t_t_B), axis=1)
-    return x1_t, x2_t, t_t
+# Splits into test and train data
+def split(data, cutof):
+    x, t = data
+    x_test = []
+    t_test = []
+    x_train = []
+    t_train = []
+    for i in range(len(x)):
+        if abs(x[i,0]) >= cutof or abs(x[i,1]) >= cutof:
+            x_test.append(x[i])
+            t_test.append(t[i])
+        else:
+            x_train.append(x[i])
+            t_train.append(t[i])
+    x_test = np.array(x_test)
+    t_test = np.array(t_test)
+    x_train = np.array(x_train)
+    t_train = np.array(t_train)
+    return ((x_test, t_test), (x_train, t_train))
 
-def get_training_data(data, size):
-    x1, x2, t = data
-    num_x1 = int(len(x2)*(1-size)//2) # get between index, including index
-    num_x2 = int(len(x2)*(1-size)//2)
-    x1_t = x1[num_x1 : -num_x1]
-    x2_t = x2[num_x2 : -num_x2]
-    t_t = t[num_x2:-num_x2, num_x1:-num_x1]
-    return x1_t, x2_t, t_t
-
-def get_biased_test_data(data, size):
-    x1, x2, t = data
-    num_x1 = int(len(x1)*size) # get outside index, excluding index
-    num_x2 = int(len(x2)*size)
-    x1_t = x1[-num_x1:]
-    x2_t = x2[-num_x2:]
-    t_t = t[-num_x2:, -num_x1:]
-    return x1_t, x2_t, t_t
-
-def get_biased_training_data(data, size):
-    x1, x2, t = data
-    num_x1 = int(len(x1)*size) # get outside index, exluding index
-    num_x2 = int(len(x2)*size)
-    x1_t = x1[:-num_x1]
-    x2_t = x2[:-num_x2]
-    t_t = t[:-num_x2, :-num_x1]
-    return x1_t, x2_t, t_t
-
-# Splits the data into <test_size>% test data and the rest trainging data
-def split_data(data, test_size):
-    test_data = get_test_data(data, test_size)
-    train_data = get_training_data(data, 1-test_size)
-    return test_data, train_data
-
-# Splits the data into <test_size>% test data and the rest trainging data
-# Uses a biased splitting aproach
-def split_data_biased(data, test_size):
-    test_data = get_biased_test_data(data, test_size)
-    train_data = get_biased_training_data(data, 1-test_size)
-    return test_data, train_data
+def split_biased(data, cutof):
+    x, t = data
+    x_test = []
+    t_test = []
+    x_train = []
+    t_train = []
+    for i in range(len(x)):
+        if x[i,0]>=cutof or x[i,1]>=cutof:
+            x_test.append(x[i])
+            t_test.append(t[i])
+        else:
+            x_train.append(x[i])
+            t_train.append(t[i])
+    x_test = np.array(x_test)
+    t_test = np.array(t_test)
+    x_train = np.array(x_train)
+    t_train = np.array(t_train)
+    return ((x_test, t_test), (x_train, t_train))
     
 # Adds noice ~ N(0, var) to a matrix mat
 # Mutates mat, Returns nothing
-def add_noise(mat, var):
-    random_noice = np.random.normal(0, np.sqrt(var), size=(mat.shape))
+def add_noice(mat, var, magnitute):
+    random_noice = magnitute*np.random.normal(0, np.sqrt(var), size=(mat.shape))
     mat += random_noice
     return
 
@@ -83,16 +70,16 @@ def design_matrix(X):
         return np.array([1, x[0]**2, x[1]**3])
     return np.array(list(map(feature_vector, X)))
 
-def get_w_likelihood_method(alg_formatted_data):
-    X, t = alg_formatted_data
+def get_w_liklyhood_method(alg_formated_data):
+    X, t = alg_formated_data
     A = design_matrix(X)
-    w, residuals, rank, s = np.linalg.lstsq(A, t) # max likelihood => least square method (when normal dist)
+    w, residuals, rank, s = np.linalg.lstsq(A, t) # max liklyhood => least square method (when normal dist)
     return w
 
 # Returns the data formatted as following
-# Input:    [[x1, y2], ..., [xn, ym]]   (list of input 2-length-vectors x)
-# Target:   [t11, ..., tnm]             (list of targets, each corresponding to the index of the input)
-def to_algebra_approved_format(data):
+# Input:    [[x1, y2], ..., [xn, ym]]   (list of input 2-length-vetors x)
+# Target:   [t11, ..., tnm]             (list of targets, each coresponding to the index of the input)
+def to_algebra_aproved_format(data):
     x1, x2, t = data
     X1, X2 = np.meshgrid(x1, x2)
     X = np.dstack((X1, X2))
@@ -103,11 +90,11 @@ def to_algebra_approved_format(data):
 def predict_t(x,w):
     return w[0] + w[1]*(x[0]**2) + w[2]*(x[1]**3)
 
-# w = param, B = prediction
-def predict_ts(alg_formatted_X, w):
-    ones = np.ones(len(alg_formatted_X))
-    X1 = alg_formatted_X[:,0]
-    X2 = alg_formatted_X[:,1]
+# w = param, B = preition
+def predict_ts(alg_formated_X, w):
+    ones = np.ones(len(alg_formated_X))
+    X1 = alg_formated_X[:,0]
+    X2 = alg_formated_X[:,1]
     t_pred = ones*w[0] + (X1**2)*w[1] + (X2**3)*w[2]
     return t_pred
 
@@ -159,14 +146,14 @@ def main():
     x1 = np.linspace(-1.0, 1.0, n); x2 = np.linspace(-1.0, 1.0, n); 
     w = np.array([0, 2.5, -0.5]); b = 1/sigma2
     data = generate_data(x1, x2, w, sigma2)
-    datas = split_data(data, 0.7) # datas = (test, training)
-    add_noise(datas[0][2], 0.25**2) # Add even more noise to testdata -- e ~ N(0, 0.25**2) (Could it be N(0, 0.25**2*sigma2)?)
-    train_data_alg_format = to_algebra_approved_format(datas[1])
-    test_data_alg_format = to_algebra_approved_format(datas[0])
+    datas = split_data(data, 0.3) # datas = (test, training)
+    add_noice(datas[0][2], sigma2, 0.25) # Add even more noise to testdata -- 
+    train = datas[1]
+    test = datas[0]
     
-    w_ML = get_w_likelihood_method(train_data_alg_format)
-    t_prediction_ML = predict_ts(test_data_alg_format[0], w_ML)
-    mse_ML = mean_squared_error(test_data_alg_format[1], t_prediction_ML)
+    w_ML = get_w_likelihood_method(train)
+    t_prediction_ML = predict_ts(test[0], w_ML)
+    mse_ML = mean_squared_error(test[1], t_prediction_ML)
     
     for alpha in [0.2, 0.8, 2.0]:
         
