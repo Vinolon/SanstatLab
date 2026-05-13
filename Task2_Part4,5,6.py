@@ -70,7 +70,7 @@ def design_matrix(X):
         return np.array([1, x[0]**2, x[1]**3])
     return np.array(list(map(feature_vector, X)))
 
-def get_w_liklyhood_method(alg_formated_data):
+def get_w_likelihood_method(alg_formated_data):
     X, t = alg_formated_data
     A = design_matrix(X)
     w, residuals, rank, s = np.linalg.lstsq(A, t) # max liklyhood => least square method (when normal dist)
@@ -146,8 +146,8 @@ def main():
     x1 = np.linspace(-1.0, 1.0, n); x2 = np.linspace(-1.0, 1.0, n); 
     w = np.array([0, 2.5, -0.5]); b = 1/sigma2
     data = generate_data(x1, x2, w, sigma2)
-    datas = split_data(data, 0.3) # datas = (test, training)
-    add_noice(datas[0][2], sigma2, 0.25) # Add even more noise to testdata -- 
+    datas = split(data, 0.3) # datas = (test, training)
+    add_noice(datas[0][1], sigma2, 0.25) # Add even more noise to testdata -- 
     train = datas[1]
     test = datas[0]
     
@@ -157,16 +157,16 @@ def main():
     
     for alpha in [0.2, 0.8, 2.0]:
         
-        sN, mN = Bayesian_variance(alpha, b, train_data_alg_format)
-        pred_variance_test, pred_mean_test = Bayesian_pred(sN, mN, test_data_alg_format, b)
+        sN, mN = Bayesian_variance(alpha, b, train)
+        pred_variance_test, pred_mean_test = Bayesian_pred(sN, mN, test, b)
         t_pred_test = pred_mean_test
         mean_variance_test = np.mean(pred_variance_test)
-        mse_Bay = mean_squared_error(test_data_alg_format[1], t_pred_test)
+        mse_Bay = mean_squared_error(test[1], t_pred_test)
         
-        pred_variance_train, pred_mean_train = Bayesian_pred(sN, mN, train_data_alg_format, b)
+        pred_variance_train, pred_mean_train = Bayesian_pred(sN, mN, train, b)
         t_pred_train = pred_mean_train
         mean_variance_train = np.mean(pred_variance_train)
-        mse_Bay_train = mean_squared_error(train_data_alg_format[1], t_pred_train)
+        mse_Bay_train = mean_squared_error(train[1], t_pred_train)
     
         print(f"Mean of test variance for alpha {alpha}: {mean_variance_test}")
         print(f"MSE of Bayesian approach for test data: \n\t {mse_Bay}")
