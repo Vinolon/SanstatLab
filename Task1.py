@@ -170,7 +170,7 @@ def plot_sampled_regression_line(x_subset, t_subset, plot_idx):
     # Plots all testing data points
     plt.scatter(x_test, t_test, label="Test data")
     # Plots the data points that were used in the training of the model and mark them with 'x'
-    plt.scatter(x_subset, t_subset, color="orange", marker='x', label="Training subset")
+    plt.scatter(x_subset, t_subset, color="pink", marker='x', label="Training subset")
     plt.title(f"Regression lines from {5} posterior weight samples (trained on {len(x_subset)} points)")
     plt.xlabel("x")
     plt.ylabel("t")
@@ -202,12 +202,14 @@ def plot_predictions(x_subset, t_subset, plot_idx):
     x_ext_training = np.column_stack((np.ones(len(x_subset)), x_subset))
     # Calculate optimal weights (w_ml) using maximum likelihood (Equation 21)
     wML = np.linalg.inv(x_ext_training.T @ x_ext_training) @ x_ext_training.T @ t_subset
-    for x in x_test:
+    mse_bayes_sum = 0
+    mse_ml_sum = 0
+    for i,x in enumerate(x_test):
         # Build x_ext = [1,x] for the current test point
         x_ext = np.array([1,x])
         # Calculate the prediction for t at the current x 
         # using the maximum likelihood method (Underneath equation 21)
-        t_ml_pred = wML @ np.array([1, x])
+        t_ml_pred = wML @ x_ext
         # Append prediction of t using ML to ml_preds
         ml_preds.append(t_ml_pred)
         # Compute predictive mean (Equation 33)
@@ -220,6 +222,17 @@ def plot_predictions(x_subset, t_subset, plot_idx):
         means.append(mean_pred)
         # Convert predictive variance to standard deviation and append
         std_dev.append(np.sqrt(variance_pred))
+        # Sum the square residuals for both bayesian approach and maximum likelihood
+        mse_bayes_sum += (t_test[i] - mean_pred)**2
+        mse_ml_sum += (t_test[i] - t_ml_pred)**2
+
+    # Calculate mean squared error for bayesian approach and maximum likelihood
+    mse_bayes = mse_bayes_sum / len(x_test)
+    mse_ml = mse_ml_sum / len(x_test)
+    
+    # Print out mean squared error for bayesian approach and maximum likelihood
+    print(f"MSE for bayes with {len(x_subset)} samples: {mse_bayes}")
+    print(f"MSE for ML with {len(x_subset)} samples: {mse_ml}")
 
     # Plot in one 2x2 figure, where the subplot is decided by plot_idx
     plt.subplot(2, 2, plot_idx)
@@ -231,7 +244,7 @@ def plot_predictions(x_subset, t_subset, plot_idx):
     # Plots all testing data points
     plt.scatter(x_test, t_test, label="Test data")
     # Mark data used in model training with 'x'
-    plt.scatter(x_subset, t_subset, color="orange", marker='x', label="Training subset")
+    plt.scatter(x_subset, t_subset, color="pink", marker='x', label="Training subset")
     plt.title(f"Predictive distribution ({len(x_subset)} samples)")
     plt.xlabel("x")
     plt.ylabel("t")
